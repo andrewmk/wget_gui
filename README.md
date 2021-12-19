@@ -1,4 +1,4 @@
 # wget_gui
 A simple GUI for wget
 
-Use PySimpleGUI for the UI framework.
+Use [PySimpleGUI](http://pysimplegui.org) for the UI framework.
