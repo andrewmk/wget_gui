@@ -24,7 +24,6 @@ def wget_thread(window: sg.Window, sp: subprocess.Popen, tnum: int):
     running = True
     for line in sp.stdout:
         oline = line.decode().rstrip()
-        print(line)
         window.write_event_value('-WGET-THREAD-OUT-', oline)
         if running == False:
             kill(sp.pid)
@@ -43,22 +42,27 @@ def fetch_next_url(curr):
     args = args + ['--no-cookies', '--adjust-extension', '-v', '-H', '-E', '-k', '-K', '-p',
                    '-N', '-np', '-e robots=off', '--html-extension', f'-P {values["-OUTPUT-DIR-"]}']
     args = [wget] + args + [f'"{url}"']
-    print(args)
     window['-OUT-'].print(f'==== Starting {urls[curr]} ====')
     sp = sg.execute_command_subprocess(args[0], *args[1:], wait=False, stdin=subprocess.PIPE, pipe_output=True, merge_stderr_with_stdout=True)
     threading.Thread(target=wget_thread, args=(window, sp, curr), daemon=True).start()
+
+if sg.platform.system() == 'Windows':
+    wget = resource_path('wget.exe')
+    tmp = 'C:/Temp'
+else:
+    wget = 'wget'
+    tmp = '/tmp'
 
 layout = [
     [sg.Text('Starter URLs, one per line')],
     [sg.Multiline(expand_x=True, expand_y=True, key='-URLS-')],
     [sg.Text('Mode:'), sg.Combo(('Single page(s)', 'Recursively spider site(s)'), default_value='Single page(s)', key='-MODE-', readonly=True)],
-    [sg.Text('Output folder:'), sg.Input('C:/Temp', key='-OUTPUT-DIR-'), sg.FolderBrowse(initial_folder='C:/Temp')],
+    [sg.Text('Output folder:'), sg.Input(tmp, key='-OUTPUT-DIR-'), sg.FolderBrowse(initial_folder=tmp)],
     [sg.Multiline(size=120, expand_x=True, expand_y=True, key='-OUT-')],
-    [sg.Button('RUN', key='-RUN-', button_color='white on red'), sg.Text(key='-FILE-', expand_x=True, justification='left'), sg.Push()]
+    [sg.Button('RUN', key='-RUN-', button_color='white on red', bind_return_key=True), sg.Text(key='-FILE-', expand_x=True, justification='left'), sg.Push()]
 ]
 
 window = sg.Window('GUI for wget', layout, finalize=True, resizable=True, size=(800, 400))
-wget = resource_path('wget.exe')
 curr_url = -1
 urls = []
 count = 0
