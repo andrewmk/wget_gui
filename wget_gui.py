@@ -23,7 +23,7 @@ def wget_thread(window: sg.Window, sp: subprocess.Popen, tnum: int):
     global running
     running = True
     for line in sp.stdout:
-        oline = line.decode().rstrip()
+        oline = line.decode(encoding='UTF-8',errors='replace').rstrip()
         window.write_event_value('-WGET-THREAD-OUT-', oline)
         if running == False:
             kill(sp.pid)
@@ -45,6 +45,16 @@ def fetch_next_url(curr):
     window['-OUT-'].print(f'==== Starting {urls[curr]} ====')
     sp = sg.execute_command_subprocess(args[0], *args[1:], wait=False, stdin=subprocess.PIPE, pipe_output=True, merge_stderr_with_stdout=True)
     threading.Thread(target=wget_thread, args=(window, sp, curr), daemon=True).start()
+
+def all_done(message):
+    global curr_url
+    global running
+    curr_url = -1
+    running = False
+    window['-OUT-'].print(message)
+    sg.one_line_progress_meter_cancel()
+    window['-RUN-'].update('RUN')
+    window['-FILE-'].update('')
 
 if sg.platform.system() == 'Windows':
     wget = resource_path('wget.exe')
@@ -108,17 +118,8 @@ while True:
             # Part way through list so start next one
             fetch_next_url(curr_url)
         else:
-            window['-OUT-'].print(f'==== Finished all URLs ====')
-            sg.one_line_progress_meter_cancel()
-            curr_url = -1
-            window['-RUN-'].update('RUN')
-            window['-FILE-'].update('')
-            running = False
+            all_done('==== Finished all URLs ====')
     elif event == '-WGET-THREAD-KILLED-':
-        window['-OUT-'].print(f'==== Stopped fetching all URLs ====')
-        curr_url = -1
-        window['-RUN-'].update('RUN')
-        window['-FILE-'].update('')
-        running = False
+        all_done('==== Stopped fetching all URLs ====')
 
 window.close()
